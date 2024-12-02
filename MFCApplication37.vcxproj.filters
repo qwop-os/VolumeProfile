@@ -63,6 +63,9 @@
     <None Include="res\MFCApplication37.rc2">
       <Filter>资源文件</Filter>
     </None>
+    <None Include="README.md">
+      <Filter>资源文件</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\MFCApplication37.ico">

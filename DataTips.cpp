@@ -23,11 +23,16 @@ DataTips::~DataTips()
 BEGIN_MESSAGE_MAP(DataTips, CWnd)
 	ON_WM_PAINT()
 	ON_WM_SIZE()
+	ON_WM_CREATE()
 END_MESSAGE_MAP()
 
 
 
 // DataTips 消息处理程序
+HINSTANCE hInst = NULL;//DLL指针
+typedef BOOL(WINAPI *MYFUNC)(HWND, COLORREF, BYTE, DWORD);
+MYFUNC pFun = NULL;//函数指针
+#define TRANSPARENT_COLOR	RGB(111,111,111)
 
 void DataTips::SetPos(int mx, int my)
 {
@@ -42,10 +47,10 @@ void DataTips::OnPaint()
 	CPaintDC dc(this);
 	CRect rc;
 	GetClientRect(rc);
-	dc.FillRect(rc, &CBrush(m_color[m_nIndex]));
-	CPen Pen(PS_SOLID, 1, RGB(119, 233, 122));
+	dc.FillRect(rc, &CBrush(TRANSPARENT_COLOR));
+	CPen Pen(PS_SOLID, 1, TRANSPARENT_COLOR);
 	dc.SelectObject(Pen);
-	dc.SelectObject(CreateSolidBrush(RGB(119, 233, 122)));
+	dc.SelectObject(CreateSolidBrush(m_color[m_nIndex]));
 	CRect RcCircle;
 	RcCircle.top = rc.Height() / 2 - 8;
 	RcCircle.left = rc.left + 8;
@@ -81,4 +86,20 @@ void DataTips::OnSize(UINT nType, int cx, int cy)
 void DataTips::Relayout()
 {
 	MoveWindow(m_Startp.x,m_Startp.y,m_cx, m_cy);
+}
+
+int DataTips::OnCreate(LPCREATESTRUCT lpCreateStruct)
+{
+	if (CWnd::OnCreate(lpCreateStruct) == -1)
+		return -1;
+	 //TODO:  在此添加您专用的创建代码
+	SetWindowLong(this->m_hWnd, GWL_EXSTYLE, GetWindowLong(this->m_hWnd, GWL_EXSTYLE) | WS_EX_LAYERED);//要使使窗体拥有透明效果,首先要有WS_EX_LAYERED扩展属性
+	hInst = LoadLibrary("User32.DLL"); //显式加载DLL
+	if (hInst != NULL)
+	{
+		pFun = (MYFUNC)GetProcAddress(hInst, "SetLayeredWindowAttributes");//取得SetLayeredWindowAttributes函数指针
+		if (pFun != NULL)
+			pFun(this->m_hWnd, TRANSPARENT_COLOR, 200, LWA_ALPHA);//整个窗口按透明度透明化			
+	}
+	return TRUE;
 }
