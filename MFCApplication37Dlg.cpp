@@ -68,6 +68,14 @@ CMFCApplication37Dlg::CMFCApplication37Dlg(CWnd* pParent /*=nullptr*/)
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
 
+CMFCApplication37Dlg:: ~CMFCApplication37Dlg()
+{
+	if (m_ptip != nullptr)
+	{
+		delete m_ptip;
+	}
+}
+
 void CMFCApplication37Dlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
@@ -78,7 +86,6 @@ BEGIN_MESSAGE_MAP(CMFCApplication37Dlg, CDialogEx)
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
 	ON_WM_MOUSEMOVE()
-	//ON_WM_MOUSEHOVER()
 	ON_WM_NCHITTEST()
 	ON_WM_LBUTTONDOWN()
 	ON_WM_CREATE()
@@ -98,7 +105,7 @@ void CMFCApplication37Dlg::InitOtherRadius(int nIndex)
 		m_Radius[i] = 100;
 	}
 	if(nIndex!=-1)
-		m_Radius[nIndex] *= 1.2;
+		m_Radius[nIndex] = static_cast<int>(m_Radius[nIndex]*1.2);
 }
 
 // 判断点是否在扇形内
@@ -122,7 +129,6 @@ int CMFCApplication37Dlg::IsPointInSector(int mx, int my, int cx, int cy, double
 
 	if (isInSector)
 	{
-		//TRACE("%s,%d,%d,%d,%d,%d,%1f,%lf\n", "IsPointInSector,mx,my,cx,cy,distance,r",isInSector, mx, my, cx, cy, distance,r);
 		int len = m_angles.size();
 		double dwtest = DegreesToRadians(360);
 		int isum = 0;
@@ -131,7 +137,7 @@ int CMFCApplication37Dlg::IsPointInSector(int mx, int my, int cx, int cy, double
 			isum += m_angles[i];
 			if (angle < DegreesToRadians(isum))
 			{
-				m_Radius[i] *= 1.2;
+				m_Radius[i] = static_cast<int>(m_Radius[i] * 1.2);
 				InitOtherRadius(i);
 				return i;
 			}
@@ -234,9 +240,11 @@ void CMFCApplication37Dlg::OnPaint()
 	m_rcTime = sgRcText;
 	dcMem.DrawText(m_STime, sgRcText, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
 
-	dcMem.SelectObject(CreatePen(PS_SOLID, 2, RGB(47, 87, 149)));
+	HPEN hpen = CreatePen(PS_SOLID, 2, RGB(47, 87, 149));
+	dcMem.SelectObject(hpen);
 	dcMem.MoveTo(rc.left, rc.top);
 	dcMem.LineTo(rc.right, rc.top);
+	DeleteObject(hpen);
 
 	CFont font2;
 	font2.CREATE_FONT(12, "宋体");
@@ -252,16 +260,15 @@ void CMFCApplication37Dlg::OnPaint()
 	SetViewportOrgEx(dcMem, centerp.x, centerp.y, nullptr);//不设置的话是Dialog左上方为原点
 	m_centerp = centerp;
 	int len = m_angles.size();
-	//CRect RcPie{ -m_Radiu,-m_Radiu,m_Radiu,m_Radiu };
 	//画线条和文字
 	int  SumAnglesLine = 0;
 	for (int i = 0; i < len; i++)
 	{
-		int icos = cos(DegreesToRadians(SumAnglesLine+m_angles[i]/2))*m_linelen;
-		int isin = -sin(DegreesToRadians(SumAnglesLine+m_angles[i]/2))*m_linelen;
+		int icos = static_cast<int>(cos(DegreesToRadians(SumAnglesLine+m_angles[i]/2))*m_linelen);
+		int isin = static_cast<int>(-sin(DegreesToRadians(SumAnglesLine+m_angles[i]/2))*m_linelen);
 		SumAnglesLine += m_angles[i];
-		int x = /*centerp.x*/  icos;
-		int y = /*centerp.y +*/isin;
+		int x =  icos;
+		int y =	 isin;
 		CPen pen (PS_SOLID, 1, m_color[i]);
 		dcMem.SelectObject(pen);
 		dcMem.MoveTo(0,0);
@@ -305,13 +312,16 @@ void CMFCApplication37Dlg::OnPaint()
 	int SumAngles{ 0 };
 	CPoint EndP{int(m_Radius[0] *cos(m_angles[0]*pi/180.0)),int(-m_Radius[0] *sin(m_angles[0]*pi/180.0))};
 	SumAngles += m_angles[0];
+	HBRUSH hbrush = NULL;
 	if (m_Radius[0] == m_Radiu)
-		dcMem.SelectObject(CreateSolidBrush(m_color[0]));
+		hbrush = CreateSolidBrush(m_color[0]);
 	else
-		dcMem.SelectObject(CreateSolidBrush(m_colorExpand[0]));
+		hbrush = CreateSolidBrush(m_colorExpand[0]);
+	dcMem->SelectObject(hbrush);
 	CPen pen(PS_SOLID, 1, m_color[0]);
 	dcMem->SelectObject(pen);
 	dcMem.Pie(RcPie, StartP, EndP);
+	DeleteObject(hbrush);
 	for (int i = 1; i < len; i++)
 	{
 		CPen pen(PS_SOLID, 1, m_color[i]);
@@ -319,13 +329,15 @@ void CMFCApplication37Dlg::OnPaint()
 		StartP = EndP;
 		SumAngles += m_angles[i];
 		EndP = { int(m_Radius[i] *cos(SumAngles* pi / 180.0)), int(-m_Radius[i] * sin(SumAngles* pi / 180.0)) };
-		if(m_Radius[i]==m_Radiu)
-			dcMem.SelectObject(CreateSolidBrush(m_color[i]));
+		if (m_Radius[i] == m_Radiu)
+			hbrush = CreateSolidBrush(m_color[i]);
 		else
-			dcMem.SelectObject(CreateSolidBrush(m_colorExpand[i]));
+			hbrush = CreateSolidBrush(m_colorExpand[i]);
+		dcMem.SelectObject(hbrush);
 		RcPie.left = RcPie.top = -m_Radius[i];
 		RcPie.bottom =RcPie.right = m_Radius[i];
 		dcMem.Pie(RcPie, StartP, EndP);
+		DeleteObject(hbrush);
 	}
 
 	//画表格
@@ -333,7 +345,8 @@ void CMFCApplication37Dlg::OnPaint()
 	CRect RcGrid;
 	GetClientRect(RcGrid);
 	RcGrid.top = rc.bottom - 30;
-	dcMem.SelectObject(CreatePen(PS_SOLID, 1, RGB(188, 213, 233)));
+	hpen = CreatePen(PS_SOLID, 1, RGB(188, 213, 233));
+	dcMem.SelectObject(hpen);
 	dcMem.MoveTo(RcGrid.left, RcGrid.top);
 	dcMem.LineTo(RcGrid.right, RcGrid.top);
 	CRect ceil = RcGrid;
@@ -434,14 +447,11 @@ void CMFCApplication37Dlg::OnMouseMove(UINT nFlags, CPoint point)
 	if (m_nIndex == -1)
 	{
 		nIndex = IsPointInSector(point.x, point.y, m_centerp.x, m_centerp.y, m_Radiu);
-		//TRACE("%s:%d,%d\n", "if num,nIndex:", num++,nIndex);
 	}
 	else
 	{
 		nIndex = IsPointInSector(point.x, point.y, m_centerp.x, m_centerp.y, m_Radius[m_nIndex]);
-		//TRACE("%s:%d,%d\n", "else nIndex,m_nIndex:", num++,nIndex,m_nIndex);
 	}
-	//nIndex = IsPointInSector(point.x, point.y, m_centerp.x, m_centerp.y, m_Radiu);
 	if (nIndex == -1)
 	{
 		if (m_ptip&&m_ptip->GetSafeHwnd() && m_ptip->IsWindowVisible())
@@ -485,29 +495,8 @@ void CMFCApplication37Dlg::OnMouseMove(UINT nFlags, CPoint point)
 		m_nIndex = nIndex;
 		InvalidateRect(rc,TRUE);
 	}
-	//if (!m_bTrack)
-	//{
-	//	TRACKMOUSEEVENT csTME;
-	//	csTME.cbSize = sizeof(csTME);
-	//	csTME.dwFlags = TME_HOVER; //需要发送的消息，可选
-	//	csTME.hwndTrack = GetSafeHwnd(); ;// 指定要 追踪 的窗口 
-	//	csTME.dwHoverTime = 2000;  // HOVER消息触发时间 单位ms//东方财富大约10s
-	//	::_TrackMouseEvent(&csTME); // 开启 Windows 的 WM_MOUSELEAVE ， WM_MOUSEHOVER 事件支持
-	//	m_bTrack = true; //避免重复执行
-	//}
 	CDialogEx::OnMouseMove(nFlags, point);
 }
-
-//
-//void CMFCApplication37Dlg::OnMouseHover(UINT nFlags, CPoint point)
-//{
-//	// TODO: 在此添加消息处理程序代码和/或调用默认值
-//	m_nIndex = -1;
-//	InitOtherRadius(m_nIndex);
-//	Invalidate(TRUE);
-//	m_bTrack = false;
-//	CDialogEx::OnMouseHover(nFlags, point);
-//}
 
 
 LRESULT CMFCApplication37Dlg::OnNcHitTest(CPoint point)

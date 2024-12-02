@@ -11,6 +11,7 @@ class CMFCApplication37Dlg : public CDialogEx
 // 构造
 public:
 	CMFCApplication37Dlg(CWnd* pParent = nullptr);	// 标准构造函数
+	virtual ~CMFCApplication37Dlg();
 
 // 对话框数据
 #ifdef AFX_DESIGN_TIME
@@ -42,7 +43,7 @@ private:
 	std::vector<COLORREF>m_colorExpand{ RGB(191, 0, 0),RGB(255, 57, 57),RGB(255, 140, 140) ,RGB(11, 143, 11),RGB(42,201,45),RGB(130,255,134) };
 	std::vector<int>m_angles{60,30,90,60,30,90};//不同区域所占的角度
 	std::vector<int>m_Radius{100,100,100,100,100,100};//r
-	int m_Radiu{ 100 };
+	double m_Radiu{ 100 };
 	int m_linelen{ 150 };
 	CPoint m_centerp;
 	int m_nIndex{ -1 };
@@ -54,7 +55,6 @@ private:
 	CString m_STime;
 	CRect m_rcTime;
 public:
-	//afx_msg void OnMouseHover(UINT nFlags, CPoint point);
 	afx_msg LRESULT OnNcHitTest(CPoint point);
 	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
