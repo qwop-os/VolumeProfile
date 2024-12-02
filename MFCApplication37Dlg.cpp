@@ -68,6 +68,14 @@ CMFCApplication37Dlg::CMFCApplication37Dlg(CWnd* pParent /*=nullptr*/)
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
 
+CMFCApplication37Dlg:: ~CMFCApplication37Dlg()
+{
+	if (m_ptip != nullptr)
+	{
+		delete m_ptip;
+	}
+}
+
 void CMFCApplication37Dlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
@@ -232,9 +240,11 @@ void CMFCApplication37Dlg::OnPaint()
 	m_rcTime = sgRcText;
 	dcMem.DrawText(m_STime, sgRcText, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
 
-	dcMem.SelectObject(CreatePen(PS_SOLID, 2, RGB(47, 87, 149)));
+	HPEN hpen = CreatePen(PS_SOLID, 2, RGB(47, 87, 149));
+	dcMem.SelectObject(hpen);
 	dcMem.MoveTo(rc.left, rc.top);
 	dcMem.LineTo(rc.right, rc.top);
+	DeleteObject(hpen);
 
 	CFont font2;
 	font2.CREATE_FONT(12, "宋体");
@@ -302,13 +312,16 @@ void CMFCApplication37Dlg::OnPaint()
 	int SumAngles{ 0 };
 	CPoint EndP{int(m_Radius[0] *cos(m_angles[0]*pi/180.0)),int(-m_Radius[0] *sin(m_angles[0]*pi/180.0))};
 	SumAngles += m_angles[0];
+	HBRUSH hbrush = NULL;
 	if (m_Radius[0] == m_Radiu)
-		dcMem.SelectObject(CreateSolidBrush(m_color[0]));
+		hbrush = CreateSolidBrush(m_color[0]);
 	else
-		dcMem.SelectObject(CreateSolidBrush(m_colorExpand[0]));
+		hbrush = CreateSolidBrush(m_colorExpand[0]);
+	dcMem->SelectObject(hbrush);
 	CPen pen(PS_SOLID, 1, m_color[0]);
 	dcMem->SelectObject(pen);
 	dcMem.Pie(RcPie, StartP, EndP);
+	DeleteObject(hbrush);
 	for (int i = 1; i < len; i++)
 	{
 		CPen pen(PS_SOLID, 1, m_color[i]);
@@ -316,13 +329,15 @@ void CMFCApplication37Dlg::OnPaint()
 		StartP = EndP;
 		SumAngles += m_angles[i];
 		EndP = { int(m_Radius[i] *cos(SumAngles* pi / 180.0)), int(-m_Radius[i] * sin(SumAngles* pi / 180.0)) };
-		if(m_Radius[i]==m_Radiu)
-			dcMem.SelectObject(CreateSolidBrush(m_color[i]));
+		if (m_Radius[i] == m_Radiu)
+			hbrush = CreateSolidBrush(m_color[i]);
 		else
-			dcMem.SelectObject(CreateSolidBrush(m_colorExpand[i]));
+			hbrush = CreateSolidBrush(m_colorExpand[i]);
+		dcMem.SelectObject(hbrush);
 		RcPie.left = RcPie.top = -m_Radius[i];
 		RcPie.bottom =RcPie.right = m_Radius[i];
 		dcMem.Pie(RcPie, StartP, EndP);
+		DeleteObject(hbrush);
 	}
 
 	//画表格
@@ -330,7 +345,8 @@ void CMFCApplication37Dlg::OnPaint()
 	CRect RcGrid;
 	GetClientRect(RcGrid);
 	RcGrid.top = rc.bottom - 30;
-	dcMem.SelectObject(CreatePen(PS_SOLID, 1, RGB(188, 213, 233)));
+	hpen = CreatePen(PS_SOLID, 1, RGB(188, 213, 233));
+	dcMem.SelectObject(hpen);
 	dcMem.MoveTo(RcGrid.left, RcGrid.top);
 	dcMem.LineTo(RcGrid.right, RcGrid.top);
 	CRect ceil = RcGrid;

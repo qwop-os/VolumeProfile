@@ -11,6 +11,7 @@ class CMFCApplication37Dlg : public CDialogEx
 // 构造
 public:
 	CMFCApplication37Dlg(CWnd* pParent = nullptr);	// 标准构造函数
+	virtual ~CMFCApplication37Dlg();
 
 // 对话框数据
 #ifdef AFX_DESIGN_TIME
