@@ -10,5 +10,18 @@
 // 添加要在此处预编译的标头
 #include "framework.h"
 #include <afxwin.h>
-
+#define CREATE_FONT(nHeignt,sName) CreateFont(nHeignt,0, \
+0, \
+0, \
+FW_NORMAL, \
+FALSE, \
+FALSE, \
+0, \
+DEFAULT_CHARSET, \
+OUT_DEFAULT_PRECIS, \
+CLIP_DEFAULT_PRECIS, \
+CLEARTYPE_QUALITY, \
+DEFAULT_PITCH | FF_SWISS, \
+sName                       \
+)
 #endif //PCH_H

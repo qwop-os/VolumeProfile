@@ -18,6 +18,7 @@ using namespace Gdiplus;
 #endif
 
 #define pi 3.14159265358979323846
+static const int ID_TIMEEVENT = 10003;
 struct TipMsg
 {
 	int TotoalSell;
@@ -81,6 +82,7 @@ BEGIN_MESSAGE_MAP(CMFCApplication37Dlg, CDialogEx)
 	ON_WM_NCHITTEST()
 	ON_WM_LBUTTONDOWN()
 	ON_WM_CREATE()
+	ON_WM_TIMER()
 END_MESSAGE_MAP()
 
 // 转换为弧度
@@ -208,6 +210,10 @@ void CMFCApplication37Dlg::OnPaint()
 	rc.bottom = rc.top + 400;
 	CRect sgRcText = m_rcTitle;
 	sgRcText.left += 5;
+	CFont* pOldFont=nullptr;
+	CFont font;
+	font.CreateFont(20, 0, 0, 0, FW_MEDIUM, FALSE, FALSE, 0, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_SWISS,"宋体");
+	pOldFont = (CFont*)(dcMem.SelectObject(font));
 	dcMem.DrawText("实时成交分布图", sgRcText, DT_VCENTER | DT_LEFT | DT_SINGLELINE);
 	//关闭按钮
 	m_rcClose = sgRcText;
@@ -220,13 +226,27 @@ void CMFCApplication37Dlg::OnPaint()
 	dcMem.MoveTo(m_rcClose.right, m_rcClose.top);
 	dcMem.LineTo(m_rcClose.left, m_rcClose.bottom);
 
+	CFont font1;
+	font1.CREATE_FONT(14, "宋体");
+	dcMem->SelectObject(font1);
 	sgRcText.right = m_rcClose.left - 3;
 	sgRcText.left = sgRcText.right - dcMem.GetTextExtent("更新时间:15:30").cx;
-	dcMem.DrawText("更新时间:15:30", sgRcText, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+	m_rcTime = sgRcText;
+	dcMem.DrawText(m_STime, sgRcText, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
 
 	dcMem.SelectObject(CreatePen(PS_SOLID, 2, RGB(47, 87, 149)));
 	dcMem.MoveTo(rc.left, rc.top);
 	dcMem.LineTo(rc.right, rc.top);
+
+	CFont font2;
+	font2.CREATE_FONT(12, "宋体");
+	dcMem->SelectObject(font2);
+	sgRcText = rc;
+	sgRcText.right -= 3;
+	sgRcText.left = sgRcText.right - dcMem->GetTextExtent("单位:元").cx;
+	sgRcText.top += 10;
+	sgRcText.bottom = sgRcText.top + dcMem->GetTextExtent("单位:元").cy;
+	dcMem->DrawText("单位:元", sgRcText, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
 
 	CPoint centerp(rc.Width()/2,rc.Height()/2);
 	SetViewportOrgEx(dcMem, centerp.x, centerp.y, nullptr);//不设置的话是Dialog左上方为原点
@@ -289,9 +309,13 @@ void CMFCApplication37Dlg::OnPaint()
 		dcMem.SelectObject(CreateSolidBrush(m_color[0]));
 	else
 		dcMem.SelectObject(CreateSolidBrush(m_colorExpand[0]));
+	CPen pen(PS_SOLID, 1, m_color[0]);
+	dcMem->SelectObject(pen);
 	dcMem.Pie(RcPie, StartP, EndP);
 	for (int i = 1; i < len; i++)
 	{
+		CPen pen(PS_SOLID, 1, m_color[i]);
+		dcMem->SelectObject(pen);
 		StartP = EndP;
 		SumAngles += m_angles[i];
 		EndP = { int(m_Radius[i] *cos(SumAngles* pi / 180.0)), int(-m_Radius[i] * sin(SumAngles* pi / 180.0)) };
@@ -542,6 +566,20 @@ int CMFCApplication37Dlg::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		CString StrClassName = AfxRegisterWndClass(CS_HREDRAW | CS_VREDRAW);
 		m_ptip->CreateEx(0, StrClassName, "",WS_POPUP, CRect{}, this, 0, 0);
 	}
-
+	SetTimer(ID_TIMEEVENT, 1000, NULL);
 	return 0;
+}
+
+
+void CMFCApplication37Dlg::OnTimer(UINT_PTR nIDEvent)
+{
+	// TODO: 在此添加消息处理程序代码和/或调用默认值
+	if (nIDEvent == ID_TIMEEVENT)
+	{
+		SYSTEMTIME st;
+		GetLocalTime(&st);
+		m_STime.Format("更新时间:%02d:%02d", st.wHour, st.wMinute);
+		InvalidateRect(m_rcTime);
+	}
+	CDialogEx::OnTimer(nIDEvent);
 }

@@ -51,9 +51,12 @@ private:
 	CRect m_rcTitle;
 	CRect m_rcClose;
 	DataTips* m_ptip;
+	CString m_STime;
+	CRect m_rcTime;
 public:
 	//afx_msg void OnMouseHover(UINT nFlags, CPoint point);
 	afx_msg LRESULT OnNcHitTest(CPoint point);
 	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
+	afx_msg void OnTimer(UINT_PTR nIDEvent);
 };

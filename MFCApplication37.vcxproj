@@ -211,6 +211,7 @@
     <ResourceCompile Include="MFCApplication37.rc" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="README.md" />
     <None Include="res\MFCApplication37.rc2" />
   </ItemGroup>
   <ItemGroup>
