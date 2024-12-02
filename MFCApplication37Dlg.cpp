@@ -19,6 +19,7 @@ using namespace Gdiplus;
 
 #define pi 3.14159265358979323846
 static const int ID_TIMEEVENT = 10003;
+static const int ID_MOUSEPAUSE = 10004;
 struct TipMsg
 {
 	int TotoalSell;
@@ -256,9 +257,11 @@ void CMFCApplication37Dlg::OnPaint()
 	sgRcText.bottom = sgRcText.top + dcMem->GetTextExtent("单位:元").cy;
 	dcMem->DrawText("单位:元", sgRcText, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
 
-	CPoint centerp(rc.Width()/2,rc.Height()/2);
+	CPoint centerp(rc.Width() / 2, rc.Height() / 2);
 	SetViewportOrgEx(dcMem, centerp.x, centerp.y, nullptr);//不设置的话是Dialog左上方为原点
 	m_centerp = centerp;
+	CRect rcPip = { m_centerp.x - 120, m_centerp.y - 120, m_centerp.x + 120, m_centerp.y + 120 };
+	m_rcPip = rcPip;
 	int len = m_angles.size();
 	//画线条和文字
 	int  SumAnglesLine = 0;
@@ -441,9 +444,39 @@ HCURSOR CMFCApplication37Dlg::OnQueryDragIcon()
 void CMFCApplication37Dlg::OnMouseMove(UINT nFlags, CPoint point)
 {
 	// TODO: 在此添加消息处理程序代码和/或调用默认值
-	CRect rc{ m_centerp.x - 120,m_centerp.y - 120,m_centerp.x+ 120,m_centerp.y+ 120 };
-	static int num = 1;
+	m_LastMoveTime = time(NULL);
+	CRect rc{ m_centerp.x - 120,m_centerp.y - 120,m_centerp.x + 120,m_centerp.y + 120 };
 	int nIndex = -1;
+	if (m_bMousePause)
+	{
+		return;
+	}
+	nIndex = IsPointInSector(point.x, point.y, m_centerp.x, m_centerp.y, m_Radiu);
+	TRACE("frist:%d,%d\n", nIndex, m_nIndex);
+	if (nIndex != -1 && nIndex == m_nIndex)
+	{
+		if (m_ptip&&m_ptip->GetSafeHwnd() && m_ptip->IsWindowVisible())
+		{
+			bool up = true;
+			bool left = true;
+			if (point.x > m_centerp.x)
+				left = false;
+			if (point.y > m_centerp.y)
+				up = false;
+			ClientToScreen(&point);
+			up ? point.y = point.y - m_ptip->getcy() - 5 : point.y += 5;
+			left ? point.x = point.x - m_ptip->getcx() - 10 : point.x += 10;
+			m_ptip->SetPos(point.x, point.y);
+			if (m_nIndex != nIndex && nIndex != -1)
+			{
+				m_ptip->SetIndex(nIndex);
+			}
+			TRACE("%s:%d\n", "m_tip invalidate", nIndex);
+			m_ptip->Invalidate(TRUE);
+		}
+		return ;
+	}
+	m_bRefreshPause = true;
 	if (m_nIndex == -1)
 	{
 		nIndex = IsPointInSector(point.x, point.y, m_centerp.x, m_centerp.y, m_Radiu);
@@ -454,6 +487,7 @@ void CMFCApplication37Dlg::OnMouseMove(UINT nFlags, CPoint point)
 	}
 	if (nIndex == -1)
 	{
+		TRACE("%s:%d\n", "if (nIndex == -1)", nIndex);
 		if (m_ptip&&m_ptip->GetSafeHwnd() && m_ptip->IsWindowVisible())
 		{
 			m_ptip->ShowWindow(SW_HIDE);
@@ -467,6 +501,7 @@ void CMFCApplication37Dlg::OnMouseMove(UINT nFlags, CPoint point)
 	}
 	else
 	{
+		TRACE("%s:%d\n", "else (nIndex != -1)", nIndex);
 		if (m_ptip&&m_ptip->GetSafeHwnd() && !m_ptip->IsWindowVisible())
 		{
 			m_ptip->ShowWindow(SW_SHOW);
@@ -488,6 +523,7 @@ void CMFCApplication37Dlg::OnMouseMove(UINT nFlags, CPoint point)
 		{
 			m_ptip->SetIndex(nIndex);
 		}
+		TRACE("%s:%d\n", "m_tip invalidate",nIndex);
 		m_ptip->Invalidate(TRUE);
 	}
 	if (-1!=nIndex&&nIndex != m_nIndex)
@@ -556,6 +592,9 @@ int CMFCApplication37Dlg::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		m_ptip->CreateEx(0, StrClassName, "",WS_POPUP, CRect{}, this, 0, 0);
 	}
 	SetTimer(ID_TIMEEVENT, 1000, NULL);
+	SetTimer(ID_MOUSEPAUSE, 10, nullptr);
+	m_LastMoveTime = time(NULL);
+
 	return 0;
 }
 
@@ -569,6 +608,24 @@ void CMFCApplication37Dlg::OnTimer(UINT_PTR nIDEvent)
 		GetLocalTime(&st);
 		m_STime.Format("更新时间:%02d:%02d", st.wHour, st.wMinute);
 		InvalidateRect(m_rcTime);
+	}
+	else if (ID_MOUSEPAUSE == nIDEvent)
+	{
+		time_t currentTime = time(NULL);
+		double elapsed = difftime(currentTime, m_LastMoveTime);
+
+		// 检查是否超过阈值（例如，5秒）
+		if (elapsed >= 5.0&&m_bRefreshPause)
+		{
+			m_bRefreshPause = !m_bRefreshPause;
+			m_bMousePause = TRUE;
+			InitOtherRadius(-1);
+			InvalidateRect(m_rcPip);
+		}
+		else
+		{
+			m_bMousePause = FALSE;
+		}
 	}
 	CDialogEx::OnTimer(nIDEvent);
 }

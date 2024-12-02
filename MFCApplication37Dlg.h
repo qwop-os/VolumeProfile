@@ -48,12 +48,16 @@ private:
 	CPoint m_centerp;
 	int m_nIndex{ -1 };
 	bool m_bTrack{ false };
+	bool m_bMousePause{ false };
+	bool m_bRefreshPause{ true };
+	time_t m_LastMoveTime;
 	CArray<CString, CString> m_arrStr;
 	CRect m_rcTitle;
 	CRect m_rcClose;
 	DataTips* m_ptip;
 	CString m_STime;
 	CRect m_rcTime;
+	CRect m_rcPip;
 public:
 	afx_msg LRESULT OnNcHitTest(CPoint point);
 	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
