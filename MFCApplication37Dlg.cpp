@@ -451,6 +451,10 @@ void CMFCApplication37Dlg::OnMouseMove(UINT nFlags, CPoint point)
 	else
 	{
 		nIndex = IsPointInSector(point.x, point.y, m_centerp.x, m_centerp.y, m_Radius[m_nIndex]);
+		if (nIndex != m_nIndex)
+		{
+			nIndex = IsPointInSector(point.x, point.y, m_centerp.x, m_centerp.y, m_Radiu);
+		}
 	}
 	if (nIndex == -1)
 	{
