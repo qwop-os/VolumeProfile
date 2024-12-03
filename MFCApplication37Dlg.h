@@ -44,10 +44,11 @@ private:
 	std::vector<int>m_angles{60,30,90,60,30,90};//不同区域所占的角度
 	std::vector<int>m_Radius{100,100,100,100,100,100};//r
 	double m_Radiu{ 100 };
+	double m_bigRadiu{ 120 };
 	int m_linelen{ 150 };
 	CPoint m_centerp;
 	int m_nIndex{ -1 };
-	bool m_bTrack{ false };
+	bool m_bSign{ false };
 	bool m_bMousePause{ false };
 	bool m_bRefreshPause{ true };
 	time_t m_LastMoveTime;

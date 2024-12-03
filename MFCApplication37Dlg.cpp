@@ -131,7 +131,6 @@ int CMFCApplication37Dlg::IsPointInSector(int mx, int my, int cx, int cy, double
 	if (isInSector)
 	{
 		int len = m_angles.size();
-		double dwtest = DegreesToRadians(360);
 		int isum = 0;
 		for (int i = 0; i < len; i++)
 		{
@@ -445,15 +444,34 @@ void CMFCApplication37Dlg::OnMouseMove(UINT nFlags, CPoint point)
 {
 	// TODO: 在此添加消息处理程序代码和/或调用默认值
 	m_LastMoveTime = time(NULL);
-	CRect rc{ m_centerp.x - 120,m_centerp.y - 120,m_centerp.x + 120,m_centerp.y + 120 };
+	CRect rc{ m_centerp.x - static_cast<int>(m_bigRadiu),m_centerp.y - static_cast<int>(m_bigRadiu),m_centerp.x + static_cast<int>(m_bigRadiu),m_centerp.y + static_cast<int>(m_bigRadiu) };
 	int nIndex = -1;
 	if (m_bMousePause)
 	{
 		return;
 	}
-	nIndex = IsPointInSector(point.x, point.y, m_centerp.x, m_centerp.y, m_Radiu);
-	TRACE("frist:%d,%d\n", nIndex, m_nIndex);
-	if (nIndex != -1 && nIndex == m_nIndex)
+	//进入r100;
+	if (m_nIndex == -1)
+	{
+		nIndex = IsPointInSector(point.x, point.y, m_centerp.x, m_centerp.y, m_Radiu);
+		if (nIndex != m_nIndex)
+			m_bSign = true;
+	}
+	//离开120，切换100;
+	else
+	{
+		nIndex = IsPointInSector(point.x, point.y, m_centerp.x, m_centerp.y, m_Radiu);
+		if (nIndex != -1 && nIndex != m_nIndex)//切换
+		{
+			m_bSign = true;
+		}
+		nIndex = IsPointInSector(point.x, point.y, m_centerp.x, m_centerp.y, m_bigRadiu);
+		if (nIndex == -1)//离开
+		{
+			m_bSign = true;
+		}
+	}
+	if (nIndex != -1 && nIndex == m_nIndex&&m_bSign)
 	{
 		if (m_ptip&&m_ptip->GetSafeHwnd() && m_ptip->IsWindowVisible())
 		{
@@ -471,7 +489,6 @@ void CMFCApplication37Dlg::OnMouseMove(UINT nFlags, CPoint point)
 			{
 				m_ptip->SetIndex(nIndex);
 			}
-			TRACE("%s:%d\n", "m_tip invalidate", nIndex);
 			m_ptip->Invalidate(TRUE);
 		}
 		return ;
@@ -483,11 +500,21 @@ void CMFCApplication37Dlg::OnMouseMove(UINT nFlags, CPoint point)
 	}
 	else
 	{
-		nIndex = IsPointInSector(point.x, point.y, m_centerp.x, m_centerp.y, m_Radius[m_nIndex]);
+		if (m_bSign)
+		{
+			nIndex = IsPointInSector(point.x, point.y, m_centerp.x, m_centerp.y, m_bigRadiu);
+			if (nIndex != m_nIndex)
+			{
+				nIndex = IsPointInSector(point.x, point.y, m_centerp.x, m_centerp.y, m_Radiu);
+			}
+		}
+		else
+		{
+			nIndex = IsPointInSector(point.x, point.y, m_centerp.x, m_centerp.y, m_Radiu);
+		}
 	}
 	if (nIndex == -1)
 	{
-		TRACE("%s:%d\n", "if (nIndex == -1)", nIndex);
 		if (m_ptip&&m_ptip->GetSafeHwnd() && m_ptip->IsWindowVisible())
 		{
 			m_ptip->ShowWindow(SW_HIDE);
@@ -498,10 +525,11 @@ void CMFCApplication37Dlg::OnMouseMove(UINT nFlags, CPoint point)
 			InitOtherRadius(m_nIndex);
 			InvalidateRect(rc, TRUE);
 		}
+		m_ptip->Invalidate();
 	}
 	else
 	{
-		TRACE("%s:%d\n", "else (nIndex != -1)", nIndex);
+		static int numelse = 1;
 		if (m_ptip&&m_ptip->GetSafeHwnd() && !m_ptip->IsWindowVisible())
 		{
 			m_ptip->ShowWindow(SW_SHOW);
@@ -523,7 +551,6 @@ void CMFCApplication37Dlg::OnMouseMove(UINT nFlags, CPoint point)
 		{
 			m_ptip->SetIndex(nIndex);
 		}
-		TRACE("%s:%d\n", "m_tip invalidate",nIndex);
 		m_ptip->Invalidate(TRUE);
 	}
 	if (-1!=nIndex&&nIndex != m_nIndex)
@@ -542,7 +569,7 @@ LRESULT CMFCApplication37Dlg::OnNcHitTest(CPoint point)
 	ScreenToClient(&point);
 	// 如果鼠标在窗口客户区，则返回标题条代号给Windows
 	// 使Windows按鼠标在标题条上类进行处理，即可单击移动窗口
-	if(!m_rcClose.PtInRect(point)&&m_rcTitle.PtInRect(point))
+	if (!m_rcClose.PtInRect(point) && m_rcTitle.PtInRect(point))
 		return (nHitTest == HTCLIENT) ? HTCAPTION : nHitTest;
 	return CDialog::OnNcHitTest(point);
 }
@@ -589,7 +616,7 @@ int CMFCApplication37Dlg::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	if (m_ptip&&m_ptip->GetSafeHwnd() == nullptr)
 	{
 		CString StrClassName = AfxRegisterWndClass(CS_HREDRAW | CS_VREDRAW);
-		m_ptip->CreateEx(0, StrClassName, "",WS_POPUP, CRect{}, this, 0, 0);
+		m_ptip->CreateEx(0, StrClassName, "", WS_POPUP, CRect{}, this, 0, 0);
 	}
 	SetTimer(ID_TIMEEVENT, 1000, NULL);
 	SetTimer(ID_MOUSEPAUSE, 10, nullptr);
@@ -617,9 +644,29 @@ void CMFCApplication37Dlg::OnTimer(UINT_PTR nIDEvent)
 		// 检查是否超过阈值（例如，5秒）
 		if (elapsed >= 5.0&&m_bRefreshPause)
 		{
+			m_bSign = false;
+			CPoint Currentpt;
+			GetCursorPos(&Currentpt);
+			ScreenToClient(&Currentpt);
+			int nIndex = IsPointInSector(Currentpt.x, Currentpt.y, m_centerp.x, m_centerp.y, m_Radiu);
+			if (nIndex == -1)
+			{
+				if (m_ptip&&m_ptip->GetSafeHwnd() && m_ptip->IsWindowVisible())
+				{
+					m_ptip->ShowWindow(SW_HIDE);
+				}
+			}
+			else
+			{
+				if(m_ptip&&m_ptip->GetSafeHwnd() && !m_ptip->IsWindowVisible())
+				{
+					m_ptip->ShowWindow(SW_SHOW);
+				}
+			}
 			m_bRefreshPause = !m_bRefreshPause;
 			m_bMousePause = TRUE;
 			InitOtherRadius(-1);
+			//m_nIndex = -1;
 			InvalidateRect(m_rcPip);
 		}
 		else
